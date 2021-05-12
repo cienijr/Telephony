@@ -195,7 +195,9 @@ class SmsMethodCallHandler(
     }
     when (smsAction) {
       SmsAction.SEND_SMS -> smsController.sendSms(address, messageBody, listenStatus)
+      SmsAction.SEND_SMS_WITHOUT_PERSISTING -> smsController.sendSmsWithoutPersisting(address, messageBody, listenStatus)
       SmsAction.SEND_MULTIPART_SMS -> smsController.sendMultipartSms(address, messageBody, listenStatus)
+      SmsAction.SEND_MULTIPART_SMS_WITHOUT_PERSISTING -> smsController.sendMultipartSmsWithoutPersisting(address, messageBody, listenStatus)
       SmsAction.SEND_SMS_INTENT -> smsController.sendSmsIntent(address, messageBody)
       else -> throw IllegalArgumentException()
     }
@@ -314,6 +316,8 @@ class SmsMethodCallHandler(
         val permissions = permissionsController.getServiceStatePermissions()
         return checkOrRequestPermission(permissions, requestCode)
       }
+      SmsAction.SEND_SMS_WITHOUT_PERSISTING,
+      SmsAction.SEND_MULTIPART_SMS_WITHOUT_PERSISTING,
       SmsAction.REQUEST_PHONE_AND_SMS_PERMISSIONS -> {
         val permissions = listOf(permissionsController.getSmsPermissions(), permissionsController.getPhonePermissions()).flatten()
         return checkOrRequestPermission(permissions, requestCode)

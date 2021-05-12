@@ -9,7 +9,9 @@ enum class SmsAction(private val methodName: String) {
   GET_DRAFT("getAllDraftSms"),
   GET_CONVERSATIONS("getAllConversations"),
   SEND_SMS("sendSms"),
+  SEND_SMS_WITHOUT_PERSISTING("sendSmsWithoutPersisting"),
   SEND_MULTIPART_SMS("sendMultipartSms"),
+  SEND_MULTIPART_SMS_WITHOUT_PERSISTING("sendMultipartSmsWithoutPersisting"),
   SEND_SMS_INTENT("sendSmsIntent"),
   START_BACKGROUND_SERVICE("startBackgroundService"),
   DISABLE_BACKGROUND_SERVICE("disableBackgroundService"),
@@ -53,7 +55,9 @@ enum class SmsAction(private val methodName: String) {
       GET_DRAFT,
       GET_CONVERSATIONS -> ActionType.GET_SMS
       SEND_SMS,
+      SEND_SMS_WITHOUT_PERSISTING,
       SEND_MULTIPART_SMS,
+      SEND_MULTIPART_SMS_WITHOUT_PERSISTING,
       SEND_SMS_INTENT,
       NO_SUCH_METHOD -> ActionType.SEND_SMS
       START_BACKGROUND_SERVICE,

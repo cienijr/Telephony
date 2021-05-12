@@ -305,6 +305,7 @@ class Telephony {
     required String message,
     SmsSendStatusListener? statusListener,
     bool isMultipart = false,
+    bool persist = true,
   }) async {
     assert(_platform.isAndroid == true, "Can only be called on Android.");
     bool listenStatus = false;
@@ -317,7 +318,21 @@ class Telephony {
       "message_body": message,
       "listen_status": listenStatus
     };
-    final String method = isMultipart ? SEND_MULTIPART_SMS : SEND_SMS;
+    final String method;
+    if (isMultipart) {
+      if (persist) {
+        method = SEND_MULTIPART_SMS;
+      } else {
+        method = SEND_MULTIPART_SMS_WITHOUT_PERSISTING;
+      }
+    } else {
+      if (persist) {
+        method = SEND_SMS;
+      } else {
+        method = SEND_SMS_WITHOUT_PERSISTING;
+      }
+    }
+
     await _foregroundChannel.invokeMethod(method, args);
   }
 

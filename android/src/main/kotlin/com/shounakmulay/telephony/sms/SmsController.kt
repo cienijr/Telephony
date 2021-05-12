@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.telephony.*
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import com.shounakmulay.telephony.utils.Constants.ACTION_SMS_DELIVERED
@@ -18,6 +19,8 @@ import com.shounakmulay.telephony.utils.Constants.SMS_DELIVERED_BROADCAST_REQUES
 import com.shounakmulay.telephony.utils.Constants.SMS_SENT_BROADCAST_REQUEST_CODE
 import com.shounakmulay.telephony.utils.Constants.SMS_TO
 import com.shounakmulay.telephony.utils.ContentUri
+import java.lang.IllegalArgumentException
+import java.lang.reflect.InvocationTargetException
 
 
 class SmsController(private val context: Context) {
@@ -66,6 +69,25 @@ class SmsController(private val context: Context) {
     }
   }
 
+  fun sendSmsWithoutPersisting(destinationAddress: String, messageBody: String, listenStatus: Boolean) {
+    val fallback = {
+      Log.i("SMS_FALLBACK", "Fallback to persisted")
+      sendSms(destinationAddress, messageBody, listenStatus)
+    }
+
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+      return fallback()
+    }
+
+    val smsManager = getSmsManager()
+    if (listenStatus) {
+      val pendingIntents = getPendingIntents()
+      smsManager.sendTextMessageWithoutPersisting(destinationAddress, null, messageBody, pendingIntents.first, pendingIntents.second)
+    } else {
+      smsManager.sendTextMessageWithoutPersisting(destinationAddress, null, messageBody, null, null)
+    }
+  }
+
   fun sendMultipartSms(destinationAddress: String, messageBody: String, listenStatus: Boolean) {
     val smsManager = getSmsManager()
     val messageParts = smsManager.divideMessage(messageBody)
@@ -74,6 +96,46 @@ class SmsController(private val context: Context) {
       smsManager.sendMultipartTextMessage(destinationAddress, null, messageParts, pendingIntents.first, pendingIntents.second)
     } else {
       smsManager.sendMultipartTextMessage(destinationAddress, null, messageParts, null, null)
+    }
+  }
+
+  fun sendMultipartSmsWithoutPersisting(destinationAddress: String, messageBody: String, listenStatus: Boolean) {
+    val fallback = {
+      Log.i("SMS_FALLBACK", "Fallback to persisted")
+      sendMultipartSms(destinationAddress, messageBody, listenStatus)
+    }
+
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+      return fallback()
+    }
+
+    val smsManager = getSmsManager()
+    val messageParts = smsManager.divideMessage(messageBody)
+
+    try {
+      val method = smsManager.javaClass.getMethod("sendMultipartTextMessageWithoutPersisting")
+
+      if (listenStatus) {
+        val pendingIntents = getMultiplePendingIntents(messageParts.size)
+        method.invoke(smsManager, destinationAddress, null, messageParts, pendingIntents.first, pendingIntents.second)
+      } else {
+        method.invoke(smsManager, destinationAddress, null, messageParts, null, null)
+      }
+    } catch (e: NoSuchMethodException) {
+      Log.e("SMS_REFLECTION", "Reflection failed (NoSuchMethodException)", e)
+      return fallback()
+    } catch (e: InvocationTargetException) {
+      val cause = e.cause
+      if (cause != null) {
+        Log.e("SMS_REFLECTION", "Reflection call thrown exception", cause)
+        throw cause
+      } else {
+        Log.e("SMS_REFLECTION", "Reflection call thrown exception", e)
+        throw e
+      }
+    } catch (e: IllegalArgumentException) {
+      Log.e("SMS_REFLECTION", "Reflection failed (IllegalArgumentException)", e)
+      return fallback()
     }
   }
 
